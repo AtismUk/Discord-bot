@@ -13,7 +13,7 @@ namespace Discord_bot
 
         DiscordSocketClient _client = new(new()
         {
-            GatewayIntents = GatewayIntents.All,
+            GatewayIntents = GatewayIntents.All
         });
 
         static Task Main(string[] args) => new Program().MainAsync();
@@ -50,7 +50,7 @@ namespace Discord_bot
             var messages = channel.GetMessagesAsync().FlattenAsync();
             var message = messages.Result.ElementAt(int.Parse(number)-1);
 
-            var users = _client.Guilds.Select(x => x.Users.Select(x => x.Id));
+            var users = _client.GetGuild((ulong)command.GuildId).Users;
             List<IUser> usersList = new List<IUser>();
             List<IUser> userReactions = new();
             foreach (var reactionEmoji in message.Reactions.Keys)
@@ -62,32 +62,13 @@ namespace Discord_bot
             var notRepeat = userReactions.DistinctBy(x => x.Id).ToList();
             foreach (var user in users)
             {
-                foreach (var item in user)
+                if (!notRepeat.Select(x => x.Id).Contains(user.Id))
                 {
-                    if (!notRepeat.Select(x => x.Id).Contains(item))
-                    {
-                        usersList.Add(_client.GetUser(item));
-                    }
-                    continue;
+                    usersList.Add(_client.GetUser(user.Id));
                 }
             }
-            //foreach (var reactionEmoji in message.Reactions.Keys)
-            //{
-            //    var reactionUsers = message.GetReactionUsersAsync(new Emoji(reactionEmoji.Name), 100).FlattenAsync();
-            //    foreach (var user in users)
-            //    {
-            //        foreach (var item in user)
-            //        {
-            //            if (!reactionUsers.Result.Select(x => x.Id).Contains(item) && !usersList.Select(x => x.Id).Contains(item))
-            //            {
-            //                usersList.Add(_client.GetUser(item));
-            //            }
-            //            continue;
-            //        }
-            //    }
-            //}
 
-           
+
             string properUsers = "";
             foreach (var item in usersList)
             {
