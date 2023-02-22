@@ -1,0 +1,9 @@
+{
+  "confog": {
+    "tokenDiscord": "MTA2OTk3NjQ3MTkzNTkxNDA0Ng.G_NkGV.efHPdkfb5MXGFL3Ejj5uaY2IQSZ8Q-U6Be-7_M"
+  },
+  "DataBase": {
+    "DbConnection": "Server=***;Database=***;Trusted_Connection=True;"
+  }
+
+}

@@ -2,6 +2,7 @@
 using Discord.Net;
 using Discord.WebSocket;
 using Discord_bot.Model;
+using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -18,6 +19,7 @@ namespace Discord_bot
             UseInteractionSnowflakeDate = false
         });
 
+
         static Task Main(string[] args) => new Program().MainAsync();
 
         async Task MainAsync()
@@ -26,9 +28,7 @@ namespace Discord_bot
             _client.Ready += Client_Ready;
             _client.SlashCommandExecuted += SlashCommandHandler;
 
-            var token = "MTA2OTk3NjQ3MTkzNTkxNDA0Ng.G_NkGV.efHPdkfb5MXGFL3Ejj5uaY2IQSZ8Q-U6Be-7_M";
-
-            await _client.LoginAsync(TokenType.Bot, token);
+            await _client.LoginAsync(TokenType.Bot, "MTA2OTk3NjQ3MTkzNTkxNDA0Ng.G_NkGV.efHPdkfb5MXGFL3Ejj5uaY2IQSZ8Q-U6Be-7_M");
             await _client.StartAsync();
 
             await Task.Delay(-1);

@@ -1,5 +1,7 @@
 ﻿using Discord;
 using Discord.WebSocket;
+using Discord_bot.Db;
+using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -99,6 +101,23 @@ namespace Discord_bot.Model
             
 
             await command.RespondAsync(embed: embedBuilder.Build());
+        }
+
+        public async Task GetAllUser(SocketSlashCommand command)
+        {
+            try
+            {
+                ContextDb context = new();
+                var users = _client.Guilds.Where(x => x.Id == command.GuildId).Select(x => x.Users);
+
+                string sqlExpression = "";
+
+            }
+            catch (Exception ex)
+            {
+
+                throw;
+            }
         }
     }
 }
