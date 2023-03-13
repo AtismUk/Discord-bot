@@ -1,11 +1,14 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using Discord_bot.Db;
+using Discord_bot.Db.Models;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace Discord_bot.Model
@@ -13,75 +16,72 @@ namespace Discord_bot.Model
     public class ProcessSlashCommand
     {
         private readonly DiscordSocketClient _client;
+        private readonly AppDbContext _context;
 
-        public ProcessSlashCommand(DiscordSocketClient client)
+        public ProcessSlashCommand(DiscordSocketClient client, AppDbContext context)
         {
             _client = client;
+            _context = context;
+        }
+
+        public async Task SetAvoidRole(SocketSlashCommand command)
+        {
+            Guild guildFromDb;
+            if (!_context.guilds.All(x => x.guildId == command.GuildId))
+            {
+                var guild = new Guild()
+                {
+                    guildId = command.GuildId
+                };
+                _context.guilds.Add(guild);
+
+                guildFromDb = guild;
+            }
+            else
+            {
+                guildFromDb = _context.guilds.First(x => x.guildId == command.GuildId);
+            }
+
+            var role = command.Data.Options.First().Value.ToString();
+            var roleOptionally = command.Data.Options.Last().Name.ToString() != "Optionally role" ? command.Data.Options.Last().Value.ToString() : null;
+
+            List<AvoidRoleGuild> avoidRoles = new List<AvoidRoleGuild>()
+            {
+                new() {roleName = role, guildId = guildFromDb.Id}
+            };
+            if (roleOptionally != null)
+            {
+                avoidRoles.Add(new() { roleName = roleOptionally, guildId = guildFromDb.Id });
+            }
+
         }
 
         public async Task GetAllUsersDidntReaction(SocketSlashCommand command)
         {
             string resultUsers = "Выбранное вами сообщение не содержит реакций";
             var embedBuilder = new EmbedBuilder();
+            //Начальные данные:
+            var properCommand = command.Data.Options.First();
+            var channel = (SocketTextChannel)properCommand.Options.First().Value;
+            var number = properCommand.Options.ElementAt(1).Value.ToString();
+
+            ManageUserVote manageUserVote = new(properCommand, _client, number, channel);
             try
             {
-                // Получаем все нужные данные
-                var channel = (SocketTextChannel)command.Data.Options.First().Value;
-                var number = command.Data.Options.ElementAt(1).Value.ToString();
-                var role = command.Data.Options.ElementAt(2).Value.ToString();
-                var roleOptionally = command.Data.Options.Last().Name.ToString() != "Optionally role" ? command.Data.Options.Last().Value.ToString() : null;
-
-
-                //Получаем все сообщения и достаем от туда нужное
-                var messages = channel.GetMessagesAsync().FlattenAsync();
-                var message = messages.Result.ElementAt(int.Parse(number) - 1);
-                //Строка с юзерами, которые не отреагировали на сообщение
-                if (message.Reactions.Count() < 1)
+                var message = manageUserVote.GetMessage();
+                List<IUser> users = new();
+                switch (command.Data.Options.First().Name)
                 {
-                    throw new Exception("Под сообщением нет ни одной реакции");
-                }
-                //Подучаем всех пользователей с учетом того, что мы отсеиваем пользователей с выбранной ролью
-                List<IUser> users = new List<IUser>();
-                foreach (var user in channel.Users.ToList().Where(x => x.IsBot == false))
-                {
-                    if (roleOptionally != null)
-                    {
-                        //Проверяем, чтобы у рользока не было роли, которую мы исключили, а так же доступа к каналу, где проводилось голосование, ибо зачем его выводить как не голсовавшего, если он и так не мог проголосовать.
-                        if (!user.Roles.Select(x => x.Name).Contains(role) && !user.Roles.Select(x => x.Name).Contains(roleOptionally))
-                        {
-                            users.Add(user);
-                        }
-                    }
-                    else
-                    {
-                        if (!user.Roles.Select(x => x.Name).Contains(role) && channel.Users.Contains(user))
-                        {
-                            users.Add(user);
-                        }
-                    }
+                    case "avoid-role":
+                        users = manageUserVote.GetAllUserDidntVote();
+                        break;
+                    case "get-role":
+                        users = manageUserVote.GetAlluserDidntVoteByRole();
+                        break;
                 }
 
-                //Избегаем повторений, создаем окончательный список людей, которые не поставили ни одной реакции.
-                List<IUser> usersList = new List<IUser>();
-                List<IUser> userReactions = new();
-                //Идем в сообщения, вытаскиваем всех пользаков, котоые поставили рекакцию
-                foreach (var reactionEmoji in message.Reactions.Keys)
-                {
-                    var reactions = message.GetReactionUsersAsync(new Emoji(reactionEmoji.Name), 100).FlattenAsync();
-                    userReactions.AddRange(reactions.Result);
-                }
-                //Теперь убераем повторения
-                var notRepeat = userReactions.DistinctBy(x => x.Id).ToList();
-                //Записываем людей, которые не поставили реакцию
-                foreach (var user in users)
-                {
-                    if (!notRepeat.Select(x => x.Id).Contains(user.Id))
-                    {
-                        usersList.Add(_client.GetUser(user.Id));
-                    }
-                }
                 resultUsers = "";
-                foreach (var item in usersList)
+                foreach (var item in users)
                 {
                     resultUsers += "\n" + item.Mention + " -> " + item.Username;
                 }
@@ -98,26 +98,8 @@ namespace Discord_bot.Model
                 embedBuilder.WithCurrentTimestamp();
             }
 
-            
 
             await command.RespondAsync(embed: embedBuilder.Build());
-        }
-
-        public async Task GetAllUser(SocketSlashCommand command)
-        {
-            try
-            {
-                ContextDb context = new();
-                var users = _client.Guilds.Where(x => x.Id == command.GuildId).Select(x => x.Users);
-
-                string sqlExpression = "";
-
-            }
-            catch (Exception ex)
-            {
-
-                throw;
-            }
         }
     }
 }
