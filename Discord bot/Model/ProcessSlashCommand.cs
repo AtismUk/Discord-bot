@@ -16,44 +16,10 @@ namespace Discord_bot.Model
     public class ProcessSlashCommand
     {
         private readonly DiscordSocketClient _client;
-        private readonly AppDbContext _context;
 
-        public ProcessSlashCommand(DiscordSocketClient client, AppDbContext context)
+        public ProcessSlashCommand(DiscordSocketClient client)
         {
             _client = client;
-            _context = context;
-        }
-
-        public async Task SetAvoidRole(SocketSlashCommand command)
-        {
-            Guild guildFromDb;
-            if (!_context.guilds.All(x => x.guildId == command.GuildId))
-            {
-                var guild = new Guild()
-                {
-                    guildId = command.GuildId
-                };
-                _context.guilds.Add(guild);
-
-                guildFromDb = guild;
-            }
-            else
-            {
-                guildFromDb = _context.guilds.First(x => x.guildId == command.GuildId);
-            }
-
-            var role = command.Data.Options.First().Value.ToString();
-            var roleOptionally = command.Data.Options.Last().Name.ToString() != "Optionally role" ? command.Data.Options.Last().Value.ToString() : null;
-
-            List<AvoidRoleGuild> avoidRoles = new List<AvoidRoleGuild>()
-            {
-                new() {roleName = role, guildId = guildFromDb.Id}
-            };
-            if (roleOptionally != null)
-            {
-                avoidRoles.Add(new() { roleName = roleOptionally, guildId = guildFromDb.Id });
-            }
-
         }
 
         public async Task GetAllUsersDidntReaction(SocketSlashCommand command)

@@ -13,7 +13,6 @@ namespace Discord_bot
 {
     internal class Program
     {
-        private readonly AppDbContext _context = new(new());
 
         DiscordSocketClient _client = new(new()
         {
@@ -29,7 +28,7 @@ namespace Discord_bot
             _client.Log += Log;
             _client.SlashCommandExecuted += SlashCommandHandler;
 
-            await _client.LoginAsync(TokenType.Bot, "MTA2OTk3NjQ3MTkzNTkxNDA0Ng.G_NkGV.efHPdkfb5MXGFL3Ejj5uaY2IQSZ8Q-U6Be-7_M");
+            await _client.LoginAsync(TokenType.Bot, "MTA2OTk3NjQ3MTkzNTkxNDA0Ng.GcQ5D1.iymK6mtWJgyxYRasGKErfrDXf_yPK6z9iPs_fE");
             await _client.StartAsync();
 
             await Task.Delay(-1);
@@ -37,7 +36,7 @@ namespace Discord_bot
 
         private async Task SlashCommandHandler(SocketSlashCommand command)
         {
-            ProcessSlashCommand slashCommand = new(_client, _context);
+            ProcessSlashCommand slashCommand = new(_client);
             switch (command.Data.Name)
             {
                 case "get-all-users-didnt-vote":
